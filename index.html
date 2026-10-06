@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Red Tape – The Impossible Form</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#d9e0d3;--sheet:#eef1f4;--ink:#1f2a5a;--red:#b8242b;--ok:#1d6a47;--line:#9aa6bd;
+  --font:"Special Elite","Courier New",Courier,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b2220;--sheet:#252d3a;--ink:#d6ddf5;--red:#ff6b72;--ok:#6fd4a0;--line:#4b5873}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.5}
+body{padding:24px 12px 80px}
+.sheet{max-width:640px;margin:0 auto;background:var(--sheet);padding:28px clamp(16px,5vw,40px) 36px;
+  border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink);position:relative}
+h1{font-size:clamp(2.2rem,9vw,3.4rem);margin:0;line-height:1;letter-spacing:-.01em}
+.sub{margin:6px 0 0;font-size:1.05rem}
+.nr{position:absolute;top:14px;right:16px;font-size:.8rem;border:1.5px solid var(--ink);padding:2px 8px}
+.intro{margin:20px 0 4px;border-top:2px solid var(--ink);padding-top:14px;font-size:.95rem}
+.field{margin-top:26px}
+label{display:flex;justify-content:space-between;align-items:center;font-size:1.05rem}
+input{width:100%;font:inherit;font-size:1.1rem;color:var(--ink);background:transparent;border:0;border-bottom:2px solid var(--ink);padding:6px 2px;outline:0;border-radius:0}
+input:focus{background:rgba(120,140,200,.15);border-bottom-color:var(--red)}
+ul{list-style:none;margin:8px 0 0;padding:0;font-size:.88rem}
+li{display:flex;gap:8px;margin:2px 0}
+li b{width:1.1em;flex:none;text-align:center}
+li.bad{color:var(--red)} li.ok{color:var(--ok)}
+.stamp{font-size:.72rem;color:var(--ok);border:2px solid var(--ok);padding:0 6px;transform:rotate(-6deg);opacity:0;transition:opacity .2s}
+.field.done .stamp{opacity:1}
+.actions{margin-top:36px;height:64px;position:relative}
+button{font:inherit;font-size:1.1rem;background:var(--ink);color:var(--sheet);border:0;padding:12px 22px;cursor:pointer;position:absolute;left:0;top:0;transition:transform .15s}
+button:focus-visible,input:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+#msg{margin-top:8px;min-height:1.5em;color:var(--red);font-size:.95rem}
+.result{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px}
+.result.show{display:flex}
+.card{background:var(--sheet);border:2px solid var(--ink);padding:28px;max-width:420px;text-align:center}
+.big{display:inline-block;color:var(--red);border:5px solid var(--red);font-size:2.2rem;padding:2px 16px;transform:rotate(-7deg);margin:6px 0 16px}
+.card button{position:static}
+.live{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:18px;border:2px solid var(--ink);padding:8px 4px}
+.live div{text-align:center;font-size:.75rem}.live strong{display:block;font-size:1.25rem}
+.akte{margin-top:28px;border-top:2px solid var(--ink);padding-top:12px}
+.akte summary{cursor:pointer;font-size:1.1rem}
+.akte dl{display:grid;grid-template-columns:1fr auto;gap:4px 16px;margin:12px 0 0;font-size:.95rem}
+.akte dd{margin:0;text-align:right}
+.akte p{margin:14px 0 4px;font-size:.9rem}
+.akte ul{font-size:.9rem}
+.akte a{color:var(--ink)}
+.akte button{position:static;margin-top:16px;font-size:.9rem;padding:8px 14px;background:transparent;color:var(--red);border:2px solid var(--red)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main class="sheet">
+  <span class="nr" id="nr">Antrag</span>
+  <h1>Red Tape</h1>
+  <p class="sub">The Impossible Form</p>
+  <p class="intro">Bitte füllen Sie alle Felder vollständig und widerspruchsfrei aus. Änderungen an früheren Feldern können spätere Angaben ungültig machen. Jeder Antrag hat andere Regeln. Dafür übernehmen wir keine Haftung.</p>
+  <div class="live" id="live"></div>
+  <div id="fields"></div>
+  <div class="actions"><button id="go" type="button">Antrag abschicken</button></div>
+  <p id="msg" role="status" aria-live="polite"></p>
+  <details class="akte"><summary>Ihre Akte</summary><div id="stats"></div><button id="reset" type="button">Akte vernichten</button></details>
+</main>
+
+<div class="result" id="result" role="dialog" aria-modal="true" aria-labelledby="rt">
+  <div class="card">
+    <div class="big" id="rt">Genehmigt</div>
+    <p id="rtext"></p>
+    <button id="again" type="button">Neuen Antrag stellen</button>
+  </div>
+</div>
+
+<script>
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const qs = new URLSearchParams(location.search);
+const seed = parseInt(qs.get("seed")) || Math.floor(Math.random() * 90000 + 10000);
+const rnd = mulberry(seed);
+const pick = a => a[Math.floor(rnd() * a.length)];
+const take = (a, n) => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, n); };
+
+const sum = n => String(n).split("").reduce((a, d) => a + +d, 0);
+const leap = y => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+const rev = s => [...s].reverse().join("");
+const minute = () => String(new Date().getMinutes()).padStart(2, "0");
+const last = s => s.slice(-1);
+const cap = v => /^\p{Lu}/u.test(v);
+const yr = v => /^\d{4}$/.test(v);
+const vowel = /[aeiouäöü]/i;
+
+// zufällige Parameter für diesen Antrag
+const bad = take([..."xyqjwvz"], 3), vow = pick([..."aeiou"]), par = pick([0, 1]);
+const lo = pick([1900, 1910, 1920]), hi = pick([2008, 2010, 2015, 2020, 2026]);
+const tld = pick([".de", ".com", ".org", ".net", ".eu"]);
+const sp = take([..."!?#$%&*+"], 3), minLen = pick([8, 9, 10, 12]);
+const mode = pick(["letzten", "ersten"]);
+const noDigit = pick([..."1234569"]);
+
+const F = [
+  { id: "vorname", label: "Vorname", rules: [
+    ["Beginnt mit einem Großbuchstaben", cap],
+    ...take([
+      [`Hat eine ${par ? "ungerade" : "gerade"} Anzahl Buchstaben`, v => v.length > 0 && v.length % 2 === par],
+      [`Enthält keinen der Buchstaben ${bad.join(" ")}`, v => v.length > 0 && !bad.some(c => v.toLowerCase().includes(c))],
+      [`Enthält den Buchstaben „${vow}“`, v => v.toLowerCase().includes(vow)],
+      ["Hat höchstens 7 Buchstaben", v => v.length > 0 && v.length <= 7],
+      ["Hat mindestens 4 Buchstaben", v => v.length >= 4],
+      ["Endet auf einen Konsonanten", v => /\p{L}$/u.test(v) && !vowel.test(last(v))],
+      ["Enthält mindestens zwei Vokale", v => (v.match(/[aeiouäöü]/gi) || []).length >= 2],
+      ["Hat keinen Doppelbuchstaben", v => v.length > 0 && !/(.)\1/i.test(v)]
+    ], 3)] },
+  { id: "nachname", label: "Nachname", rules: [
+    [`Beginnt mit dem ${mode} Buchstaben des Vornamens`, (v, a) => a.vorname && v[0] && v[0].toLowerCase() === (mode === "letzten" ? last(a.vorname) : a.vorname[0]).toLowerCase()],
+    ["Beginnt mit einem Großbuchstaben", cap],
+    ...take([
+      ["Ist länger als der Vorname", (v, a) => v.length > a.vorname.length],
+      ["Endet auf einen Vokal", v => vowel.test(last(v))],
+      ["Besteht nur aus Buchstaben", v => /^\p{L}+$/u.test(v)],
+      ["Enthält einen Doppelbuchstaben", v => /(.)\1/i.test(v)],
+      ["Enthält mindestens einen Umlaut (ä ö ü)", v => /[äöü]/i.test(v)]
+    ], 2)] },
+  { id: "jahr", label: "Geburtsjahr", rules: [
+    [`Liegt zwischen ${lo} und ${hi}`, v => yr(v) && +v >= lo && +v <= hi],
+    ["Quersumme entspricht der Länge des Nachnamens", (v, a) => /^\d+$/.test(v) && sum(v) === a.nachname.length],
+    pick([
+      ["Ist kein Schaltjahr", v => yr(v) && !leap(+v)],
+      ["Ist ein Schaltjahr", v => yr(v) && leap(+v)],
+      ["Endet auf eine gerade Ziffer", v => yr(v) && +v % 2 === 0],
+      ["Endet auf eine ungerade Ziffer", v => yr(v) && +v % 2 === 1],
+      ["Ist durch 3 teilbar", v => yr(v) && +v % 3 === 0]
+    ]),
+    pick([
+      ["Enthält mindestens eine Null", v => yr(v) && v.includes("0")],
+      [`Enthält die Ziffer ${noDigit} nicht`, v => yr(v) && !v.includes(noDigit)]
+    ])] },
+  { id: "email", label: "E-Mail-Adresse", rules: [
+    ["Enthält genau ein @", v => v.split("@").length === 2],
+    [`Endet auf ${tld}`, v => v.endsWith(tld)],
+    ...take([
+      ["Enthält den Vornamen in Kleinbuchstaben", (v, a) => a.vorname && v.includes(a.vorname.toLowerCase())],
+      ["Enthält das Geburtsjahr", (v, a) => a.jahr && v.includes(a.jahr)],
+      ["Enthält den ersten Buchstaben des Nachnamens (klein)", (v, a) => a.nachname && v.includes(a.nachname[0].toLowerCase())],
+      ["Hat vor dem @ einen Punkt", v => v.split("@")[0].includes(".")],
+      ["Beginnt mit einem Kleinbuchstaben", v => /^\p{Ll}/u.test(v)],
+      ["Hat höchstens 30 Zeichen", v => v.length > 0 && v.length <= 30],
+      ["Enthält keine Großbuchstaben", v => v.length > 0 && v === v.toLowerCase()]
+    ], 3)] },
+  { id: "ort", label: "Wohnort", rules: [
+    ["Beginnt mit einem Großbuchstaben", cap],
+    ["Hat mindestens 4 Buchstaben", v => v.length >= 4],
+    ...take([
+      ["Beginnt mit dem ersten Buchstaben des Nachnamens", (v, a) => a.nachname && v[0] && v[0].toLowerCase() === a.nachname[0].toLowerCase()],
+      ["Endet auf den letzten Buchstaben des Nachnamens", (v, a) => a.nachname && v && last(v).toLowerCase() === last(a.nachname).toLowerCase()],
+      ["Hat genauso viele Buchstaben wie der Vorname", (v, a) => a.vorname && v.length === a.vorname.length],
+      [`Enthält keinen der Buchstaben ${bad.join(" ")}`, v => v.length > 0 && !bad.some(c => v.toLowerCase().includes(c))],
+      ["Besteht nur aus Buchstaben", v => /^\p{L}+$/u.test(v)]
+    ], 2)] },
+  { id: "pw", label: "Passwort", rules: [
+    [`Mindestens ${minLen} Zeichen`, v => v.length >= minLen],
+    ...take([
+      ["Enthält den Nachnamen rückwärts (Kleinbuchstaben)", (v, a) => a.nachname && v.includes(rev(a.nachname.toLowerCase()))],
+      ["Enthält die aktuelle Minute, zweistellig (springt jede Minute weiter)", v => v.includes(minute())],
+      [`Enthält ein Sonderzeichen aus ${sp.join(" ")}`, v => sp.some(c => v.includes(c))],
+      ["Enthält die Länge des Vornamens als Ziffer", (v, a) => a.vorname && v.includes(String(a.vorname.length))],
+      ["Enthält mindestens zwei Großbuchstaben", v => (v.match(/\p{Lu}/gu) || []).length >= 2],
+      ["Enthält das Geburtsjahr", (v, a) => a.jahr && v.includes(a.jahr)],
+      ["Enthält den Wohnort in Kleinbuchstaben", (v, a) => a.ort && v.includes(a.ort.toLowerCase())],
+      ["Beginnt mit einer Ziffer", v => /^\d/.test(v)],
+      [`Endet auf ein Sonderzeichen aus ${sp.join(" ")}`, v => v && sp.includes(last(v))],
+      ["Enthält keine Leerzeichen", v => v.length > 0 && !/\s/.test(v)]
+    ], 4)] },
+  { id: "pw2", label: "Passwort bestätigen", rules: [
+    pick([
+      ["Ist das Passwort, aber rückwärts getippt", (v, a) => a.pw && v === rev(a.pw)],
+      ["Ist das Passwort komplett in Großbuchstaben", (v, a) => a.pw && v === a.pw.toUpperCase()],
+      ["Ist das Passwort rückwärts und in Großbuchstaben", (v, a) => a.pw && v === rev(a.pw).toUpperCase()],
+      ["Ist das Passwort zweimal hintereinander", (v, a) => a.pw && v === a.pw + a.pw],
+      ["Ist das Passwort rückwärts, aber ohne Ziffern", (v, a) => a.pw && v === rev(a.pw).replace(/\d/g, "")]
+    ])] }
+];
+
+// Statistik (bleibt im Browser gespeichert)
+const SK = "redtape-stats-v1";
+const blank = { started: 0, solved: 0, rejected: 0, dodges: 0, keys: 0, totalTime: 0, best: 0, recent: [] };
+let S;
+try { S = { ...blank, ...JSON.parse(localStorage.getItem(SK) || "{}") }; } catch (e) { S = { ...blank }; }
+const save = () => { try { localStorage.setItem(SK, JSON.stringify(S)); } catch (e) {} };
+const fmt = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+const run = { keys: 0, rejected: 0, dodges: 0 };
+const start = Date.now();
+S.started++; save();
+
+function renderStats() {
+  const avg = S.solved ? Math.round(S.totalTime / S.solved) : 0;
+  const rows = [
+    ["Anträge begonnen", S.started],
+    ["Anträge genehmigt", S.solved],
+    ["Genehmigungsquote", S.started ? Math.round(S.solved / S.started * 100) + " %" : "–"],
+    ["Beste Bearbeitungszeit", S.best ? fmt(S.best) : "–"],
+    ["Durchschnittliche Zeit", S.solved ? fmt(avg) : "–"],
+    ["Abgelehnte Abgaben", S.rejected],
+    ["Ausweichversuche des Buttons", S.dodges],
+    ["Tastenanschläge gesamt", S.keys]
+  ];
+  const recent = S.recent.length
+    ? "<p>Zuletzt genehmigt:</p><ul>" + S.recent.map(r => `<li><span></span><a href="?seed=${r.seed}">Nr. ${r.seed}</a> in ${fmt(r.time)}</li>`).join("") + "</ul>"
+    : "<p>Noch kein Antrag genehmigt.</p>";
+  document.getElementById("stats").innerHTML = "<dl>" + rows.map(r => `<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join("") + "</dl>" + recent;
+}
+
+document.getElementById("nr").textContent = "Antrag Nr. " + seed;
+const root = document.getElementById("fields");
+const vals = {};
+
+F.forEach(f => {
+  vals[f.id] = "";
+  const d = document.createElement("div");
+  d.className = "field"; d.id = "f-" + f.id;
+  d.innerHTML = `<label for="${f.id}">${f.label}<span class="stamp">geprüft</span></label>
+    <input id="${f.id}" type="text" autocomplete="off" spellcheck="false">
+    <ul aria-live="polite">${f.rules.map(() => "<li><b></b><span></span></li>").join("")}</ul>`;
+  d.querySelectorAll("li span").forEach((s, i) => s.textContent = f.rules[i][0]);
+  root.appendChild(d);
+  d.querySelector("input").addEventListener("input", e => { vals[f.id] = e.target.value; check(); });
+  d.querySelector("input").addEventListener("keydown", e => { if (e.key.length === 1 || e.key === "Backspace") { run.keys++; S.keys++; } });
+});
+
+function live(open) {
+  const items = [["Zeit", fmt(Math.round((Date.now() - start) / 1000))], ["Felder", (F.length - open) + "/" + F.length], ["Anschläge", run.keys], ["Ablehnungen", run.rejected]];
+  document.getElementById("live").innerHTML = items.map(i => `<div><strong>${i[1]}</strong>${i[0]}</div>`).join("");
+}
+
+function check() {
+  let open = 0;
+  F.forEach(f => {
+    const el = document.getElementById("f-" + f.id);
+    let all = true;
+    el.querySelectorAll("li").forEach((li, i) => {
+      let ok = false;
+      try { ok = !!f.rules[i][1](vals[f.id], vals); } catch (e) {}
+      li.className = ok ? "ok" : "bad";
+      li.firstChild.textContent = ok ? "✓" : "✗";
+      if (!ok) all = false;
+    });
+    el.classList.toggle("done", all);
+    if (!all) open++;
+  });
+  live(open);
+  return open;
+}
+
+const btn = document.getElementById("go");
+const msg = document.getElementById("msg");
+const calm = matchMedia("(prefers-reduced-motion:reduce)").matches;
+
+function flee() {
+  if (calm || check() === 0) { btn.style.transform = ""; return; }
+  run.dodges++; S.dodges++; save();
+  const w = btn.parentElement.clientWidth - btn.offsetWidth;
+  btn.style.transform = `translate(${Math.random() * Math.max(w, 0)}px,${(Math.random() - .5) * 90}px)`;
+}
+btn.addEventListener("pointerenter", flee);
+btn.addEventListener("pointerdown", flee);
+
+btn.addEventListener("click", () => {
+  const open = check();
+  if (open) {
+    run.rejected++; S.rejected++; save(); check(); renderStats();
+    msg.textContent = open === 1 ? "Antrag abgelehnt: 1 Feld ist noch fehlerhaft." : `Antrag abgelehnt: ${open} Felder sind noch fehlerhaft.`;
+    return;
+  }
+  msg.textContent = "";
+  const s = Math.round((Date.now() - start) / 1000);
+  const record = !S.best || s < S.best;
+  S.solved++; S.totalTime += s; if (record) S.best = s;
+  S.recent = [{ seed, time: s }, ...S.recent.filter(r => r.seed !== seed)].slice(0, 5);
+  save(); renderStats();
+  document.getElementById("rtext").textContent =
+    `Antrag Nr. ${seed}: ${fmt(s)} Min., ${run.keys} Anschläge, ${run.rejected} Ablehnungen, ${run.dodges} Ausweichversuche des Buttons.` +
+    (record ? " Neue Bestzeit!" : "") + " Bitte warten Sie nun 6 bis 8 Wochen.";
+  document.getElementById("result").classList.add("show");
+  document.getElementById("again").focus();
+});
+
+document.getElementById("again").addEventListener("click", () => { location.href = location.pathname; });
+document.getElementById("reset").addEventListener("click", () => {
+  if (confirm("Akte wirklich vernichten?")) { S = { ...blank, started: 1 }; save(); renderStats(); }
+});
+setInterval(check, 1000);
+renderStats();
+check();
+</script>
+</body>
+</html>
