@@ -5,57 +5,82 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Red Tape – The Impossible Form</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Special+Elite&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#d9e0d3;--sheet:#eef1f4;--ink:#1f2a5a;--red:#b8242b;--ok:#1d6a47;--line:#9aa6bd;
-  --font:"Special Elite","Courier New",Courier,monospace}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b2220;--sheet:#252d3a;--ink:#d6ddf5;--red:#ff6b72;--ok:#6fd4a0;--line:#4b5873}}
+:root{--bg:#c7cfbf;--sheet:#f4f2ea;--field:#fffefa;--ink:#1f2a5a;--red:#b8242b;--ok:#1d6a47;--line:#a9b0c4;--hole:#aeb8a5;
+  --font:"Special Elite","Courier New",Courier,monospace;--type:"Courier Prime","Courier New",Courier,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161b19;--sheet:#222a36;--field:#1a212b;--ink:#d6ddf5;--red:#ff6b72;--ok:#6fd4a0;--line:#4b5873;--hole:#0f1312}}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.5}
-body{padding:24px 12px 80px}
-.sheet{max-width:640px;margin:0 auto;background:var(--sheet);padding:28px clamp(16px,5vw,40px) 36px;
-  border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink);position:relative}
-h1{font-size:clamp(2.2rem,9vw,3.4rem);margin:0;line-height:1;letter-spacing:-.01em}
-.sub{margin:6px 0 0;font-size:1.05rem}
-.nr{position:absolute;top:14px;right:16px;font-size:.8rem;border:1.5px solid var(--ink);padding:2px 8px}
-.intro{margin:20px 0 4px;border-top:2px solid var(--ink);padding-top:14px;font-size:.95rem}
-.field{margin-top:26px}
-label{display:flex;justify-content:space-between;align-items:center;font-size:1.05rem}
-input{width:100%;font:inherit;font-size:1.1rem;color:var(--ink);background:transparent;border:0;border-bottom:2px solid var(--ink);padding:6px 2px;outline:0;border-radius:0}
-input:focus{background:rgba(120,140,200,.15);border-bottom-color:var(--red)}
-ul{list-style:none;margin:8px 0 0;padding:0;font-size:.88rem}
-li{display:flex;gap:8px;margin:2px 0}
-li b{width:1.1em;flex:none;text-align:center}
-li.bad{color:var(--red)} li.ok{color:var(--ok)}
-.stamp{font-size:.72rem;color:var(--ok);border:2px solid var(--ok);padding:0 6px;transform:rotate(-6deg);opacity:0;transition:opacity .2s}
+body{padding:clamp(16px,4vw,48px) 12px 80px}
+.sheet{max-width:680px;margin:0 auto;background:var(--sheet);padding:28px clamp(18px,5vw,44px) 36px;
+  border:2px solid var(--ink);box-shadow:8px 8px 0 rgba(31,42,90,.85);position:relative}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .sheet{box-shadow:8px 8px 0 rgba(0,0,0,.6)}}
+@media (min-width:760px){
+  .sheet{padding-left:76px}
+  .sheet::before{content:"";position:absolute;left:24px;top:0;bottom:0;width:20px;
+    background:radial-gradient(circle,var(--hole) 0 8px,transparent 9px) 0 140px/20px 60px no-repeat,
+               radial-gradient(circle,var(--hole) 0 8px,transparent 9px) 0 calc(100% - 200px)/20px 60px no-repeat;
+    opacity:.9}
+}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;
+  padding-bottom:16px;border-bottom:4px double var(--ink)}
+h1{font-size:clamp(2.4rem,9vw,3.6rem);margin:0;line-height:1;letter-spacing:-.015em}
+.sub{margin:8px 0 0;font-size:1.05rem;opacity:.8}
+.nr{font-size:.85rem;border:2px solid var(--ink);padding:4px 10px;background:var(--field);white-space:nowrap}
+.intro{margin:18px 0 0;font-family:var(--type);font-size:.95rem;line-height:1.6;max-width:62ch}
+.live{display:grid;grid-template-columns:repeat(4,1fr);margin-top:22px;background:var(--ink);color:var(--sheet);padding:10px 0}
+.live div{text-align:center;font-size:.72rem;padding:0 4px;border-left:1px solid rgba(128,140,180,.45)}
+.live div:first-child{border-left:0}
+.live strong{display:block;font-size:1.35rem;line-height:1.2}
+#fields{counter-reset:feld}
+.field{margin-top:22px;padding:2px 0 4px 16px;border-left:4px solid var(--line);transition:border-color .25s;counter-increment:feld}
+.field.done{border-left-color:var(--ok)}
+label{display:flex;align-items:baseline;gap:.6em;font-size:1.05rem;margin-bottom:6px}
+label::before{content:counter(feld) ".";min-width:1.4em;opacity:.55}
+input{width:100%;font-family:var(--type);font-size:1.1rem;font-weight:700;color:var(--ink);background:var(--field);
+  border:2px solid var(--ink);padding:9px 12px;outline:0;border-radius:0;box-shadow:inset 0 2px 0 rgba(31,42,90,.08)}
+input:focus{border-color:var(--red);box-shadow:3px 3px 0 var(--red)}
+ul{list-style:none;margin:10px 0 0;padding:0;font-family:var(--type);font-size:.88rem}
+li{display:flex;gap:10px;align-items:flex-start;margin:4px 0;line-height:1.35}
+li b{flex:none;width:1.25rem;height:1.25rem;margin-top:1px;border-radius:50%;display:grid;place-items:center;font-size:.72rem;line-height:1;border:1.5px solid currentColor}
+li.bad{color:var(--red)}
+li.ok{color:var(--ok);opacity:.8}
+li.ok b{background:var(--ok);border-color:var(--ok);color:var(--sheet)}
+.stamp{margin-left:auto;font-size:.72rem;color:var(--ok);border:2px double var(--ok);padding:0 8px;transform:rotate(-6deg);opacity:0;transition:opacity .2s}
 .field.done .stamp{opacity:1}
 .actions{margin-top:36px;height:64px;position:relative}
-button{font:inherit;font-size:1.1rem;background:var(--ink);color:var(--sheet);border:0;padding:12px 22px;cursor:pointer;position:absolute;left:0;top:0;transition:transform .15s}
-button:focus-visible,input:focus-visible{outline:3px solid var(--red);outline-offset:2px}
-#msg{margin-top:8px;min-height:1.5em;color:var(--red);font-size:.95rem}
-.result{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px}
+button{font:inherit;font-size:1.1rem;background:var(--ink);color:var(--sheet);border:2px solid var(--ink);padding:11px 22px;cursor:pointer;position:absolute;left:0;top:0;
+  transition:transform .15s,box-shadow .15s;box-shadow:4px 4px 0 var(--red)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--red);outline-offset:3px}
+#msg{margin-top:10px;min-height:1.5em;color:var(--red);font-family:var(--type);font-weight:700;font-size:.95rem}
+.result{position:fixed;inset:0;background:rgba(15,20,40,.6);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:16px}
 .result.show{display:flex}
-.card{background:var(--sheet);border:2px solid var(--ink);padding:28px;max-width:420px;text-align:center}
-.big{display:inline-block;color:var(--red);border:5px solid var(--red);font-size:2.2rem;padding:2px 16px;transform:rotate(-7deg);margin:6px 0 16px}
+.card{background:var(--sheet);border:2px solid var(--ink);outline:2px solid var(--ink);outline-offset:4px;padding:30px 28px 28px;max-width:440px;text-align:center;box-shadow:8px 8px 0 rgba(0,0,0,.4)}
+.card p{font-family:var(--type);font-size:.95rem;line-height:1.55}
+.big{display:inline-block;color:var(--red);border:4px double var(--red);font-size:2.3rem;padding:2px 18px;transform:rotate(-7deg);margin:8px 0 18px}
+.result.show .big{animation:slam .35s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes slam{from{transform:rotate(-7deg) scale(2.4);opacity:0}to{transform:rotate(-7deg) scale(1);opacity:1}}
 .card button{position:static}
-.live{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:18px;border:2px solid var(--ink);padding:8px 4px}
-.live div{text-align:center;font-size:.75rem}.live strong{display:block;font-size:1.25rem}
-.akte{margin-top:28px;border-top:2px solid var(--ink);padding-top:12px}
-.akte summary{cursor:pointer;font-size:1.1rem}
-.akte dl{display:grid;grid-template-columns:1fr auto;gap:4px 16px;margin:12px 0 0;font-size:.95rem}
-.akte dd{margin:0;text-align:right}
-.akte p{margin:14px 0 4px;font-size:.9rem}
+.akte{margin-top:32px;border-top:4px double var(--ink);padding-top:14px}
+.akte summary{cursor:pointer;font-size:1.15rem}
+.akte dl{display:grid;grid-template-columns:1fr auto;margin:12px 0 0;font-family:var(--type);font-size:.92rem}
+.akte dt,.akte dd{margin:0;padding:4px 0;border-bottom:1px dashed var(--line)}
+.akte dd{text-align:right;font-weight:700;padding-left:16px}
+.akte p{margin:16px 0 4px;font-family:var(--type);font-size:.9rem}
 .akte ul{font-size:.9rem}
+.akte li b{display:none}
 .akte a{color:var(--ink)}
-.akte button{position:static;margin-top:16px;font-size:.9rem;padding:8px 14px;background:transparent;color:var(--red);border:2px solid var(--red)}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.akte button{position:static;margin-top:16px;font-size:.9rem;padding:8px 14px;background:transparent;color:var(--red);border:2px solid var(--red);box-shadow:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
 <main class="sheet">
-  <span class="nr" id="nr">Antrag</span>
-  <h1>Red Tape</h1>
-  <p class="sub">The Impossible Form</p>
+  <header class="head">
+    <div><h1>Red Tape</h1><p class="sub">The Impossible Form</p></div>
+    <span class="nr" id="nr">Antrag</span>
+  </header>
   <p class="intro">Bitte füllen Sie alle Felder vollständig und widerspruchsfrei aus. Änderungen an früheren Feldern können spätere Angaben ungültig machen. Jeder Antrag hat andere Regeln. Dafür übernehmen wir keine Haftung.</p>
   <div class="live" id="live"></div>
   <div id="fields"></div>
