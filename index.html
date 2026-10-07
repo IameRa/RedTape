@@ -73,9 +73,14 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--red);outline-of
 .akte a{color:var(--ink)}
 .akte button{position:static;margin-top:16px;font-size:.9rem;padding:8px 14px;background:transparent;color:var(--red);border:2px solid var(--red);box-shadow:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.back{max-width:680px;margin:0 auto 14px}
+.back a{display:inline-block;font-size:.95rem;color:var(--ink);background:var(--sheet);border:2px solid var(--ink);padding:5px 14px;text-decoration:none;box-shadow:3px 3px 0 rgba(31,42,90,.85)}
+.back a:hover{background:var(--ink);color:var(--sheet)}
+.back a:focus-visible{outline:3px solid var(--red);outline-offset:3px}
 </style>
 </head>
 <body>
+<nav class="back"><a href="https://iamera.github.io/GameHub/">← Alle Spiele</a></nav>
 <main class="sheet">
   <header class="head">
     <div><h1>Red Tape</h1><p class="sub">The Impossible Form</p></div>
