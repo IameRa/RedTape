@@ -75,6 +75,27 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--red);outline-of
 .akte li b{display:none}
 .akte a{color:var(--ink)}
 .akte button{position:static;margin-top:16px;font-size:.9rem;padding:8px 14px;background:transparent;color:var(--red);border:2px solid var(--red);box-shadow:none}
+.lab{display:flex;align-items:baseline;gap:.6em;font-size:1.05rem;margin-bottom:6px}
+.lab::before{content:counter(anl,upper-alpha) ".";min-width:1.4em;opacity:.55}
+#anlagen{counter-reset:anl}
+.anlage{counter-increment:anl}
+.anlage[hidden],.gate[hidden]{display:none}
+.anlage .hint,.anlage .q{font-family:var(--type);font-size:.9rem;margin:2px 0 10px;line-height:1.45}
+.anlage button{position:static;font-size:.9rem;padding:8px 14px;margin:8px 8px 4px 0;box-shadow:3px 3px 0 var(--red);touch-action:manipulation}
+.anlage button:disabled{opacity:.6;box-shadow:none;cursor:default}
+canvas.cap{display:block;width:220px;max-width:100%;height:auto;border:2px solid var(--ink);margin-bottom:4px}
+canvas.sig{display:block;width:300px;max-width:100%;height:auto;border:2px dashed var(--ink);background:var(--field);touch-action:none;cursor:crosshair}
+.grid9{display:grid;grid-template-columns:repeat(3,72px);gap:6px;margin:8px 0}
+.anlage .grid9 button{width:72px;height:72px;font-size:2rem;line-height:1;padding:0;margin:0;background:var(--field);color:var(--ink);border:2px solid var(--ink);box-shadow:none}
+.anlage .grid9 button.on{border-color:var(--red);box-shadow:inset 0 0 0 3px var(--red)}
+.seq{font-size:1.5rem;line-height:1.7;word-break:break-all;margin:6px 0 10px}
+.bar{height:14px;border:2px solid var(--ink);background:var(--field);margin:6px 0 8px}
+.bar i{display:block;height:100%;width:0;background:var(--red)}
+.hold{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.sch{font-family:var(--type);font-weight:700;margin:4px 0 8px}
+.sch.open{color:var(--ok)}
+.sch.closed{color:var(--red)}
+.gate{font-family:var(--type);font-size:.9rem;opacity:.75;margin:24px 0 0;border-top:2px dashed var(--line);padding-top:10px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 .back{max-width:680px;margin:0 auto 14px}
 .back a{display:inline-block;font-size:.95rem;color:var(--ink);background:var(--sheet);border:2px solid var(--ink);padding:5px 14px;text-decoration:none;box-shadow:3px 3px 0 rgba(31,42,90,.85)}
@@ -89,9 +110,11 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--red);outline-of
     <div class="brand"><svg class="logo" viewBox="0 0 64 64" role="img" aria-label="Red Tape Logo"><rect width="64" height="64" rx="14" fill="#1f2a5a"/><path d="M15 10h24l10 10v34H15z" fill="#f4f2ea"/><path d="M39 10v10h10z" fill="#aeb8a5"/><path d="M21 27h18M21 34h12M21 41h8" stroke="#a9b0c4" stroke-width="3" stroke-linecap="round"/><circle cx="42" cy="42" r="13" fill="#b8242b" stroke="#f4f2ea" stroke-width="3"/><path d="M36.5 36.5l11 11M47.5 36.5l-11 11" stroke="#f4f2ea" stroke-width="4" stroke-linecap="round"/></svg><div><h1>Red Tape</h1><p class="sub">The Impossible Form</p></div></div>
     <span class="nr" id="nr">Antrag</span>
   </header>
-  <p class="intro">Bitte füllen Sie alle Felder vollständig und widerspruchsfrei aus. Änderungen an früheren Feldern können spätere Angaben ungültig machen. Jeder Antrag hat andere Regeln. Dafür übernehmen wir keine Haftung.</p>
+  <p class="intro">Bitte füllen Sie alle Felder vollständig und widerspruchsfrei aus. Änderungen an früheren Feldern können spätere Angaben ungültig machen. Jeder Antrag hat andere Regeln. Dafür übernehmen wir keine Haftung. Je nach Verlauf werden Anlagen nachgereicht.</p>
   <div class="live" id="live"></div>
   <div id="fields"></div>
+  <div id="anlagen"></div>
+  <p class="gate" id="gate"></p>
   <div class="actions"><button id="go" type="button">Antrag abschicken</button></div>
   <p id="msg" role="status" aria-live="polite"></p>
   <details class="akte"><summary>Ihre Akte</summary><div id="stats"></div><button id="reset" type="button">Akte vernichten</button></details>
@@ -213,14 +236,28 @@ const F = [
     ])] }
 ];
 
+// Zusatzregeln im Stil des Password Game (werden nach den ursprünglichen Zufallswerten gezogen, damit alte Antrags-Nummern ihr Formular behalten)
+const WD = ["sonntag", "montag", "dienstag", "mittwoch", "donnerstag", "freitag", "samstag"];
+const roman = n => [[90, "XC"], [50, "L"], [40, "XL"], [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]].reduce((r, [v, s]) => { while (n >= v) { r += s; n -= v; } return r; }, "");
+const prime = n => n > 1 && [...Array(Math.max(Math.floor(Math.sqrt(n)) - 1, 0))].every((_, i) => n % (i + 2));
+const rn = 20 + Math.floor(rnd() * 79), ra = 6 + Math.floor(rnd() * 4), rb = 6 + Math.floor(rnd() * 4);
+const cp = pick([["Frankreich", "paris"], ["Polen", "warschau"], ["Italien", "rom"], ["Österreich", "wien"], ["Spanien", "madrid"], ["Norwegen", "oslo"], ["Portugal", "lissabon"], ["Schweden", "stockholm"]]);
+F.find(f => f.id === "pw").rules.push(...take([
+  ["Enthält den heutigen Wochentag, ausgeschrieben in Kleinbuchstaben", v => v.toLowerCase().includes(WD[new Date().getDay()])],
+  [`Enthält die römische Zahl für ${rn} (Großbuchstaben)`, v => v.includes(roman(rn))],
+  ["Die Länge des Passworts ist eine Primzahl", v => prime(v.length)],
+  [`Enthält die Hauptstadt von ${cp[0]}`, v => v.toLowerCase().includes(cp[1])],
+  [`Enthält das Ergebnis von ${ra} × ${rb}`, v => v.includes(String(ra * rb))]
+], 3));
+
 // Statistik (bleibt im Browser gespeichert)
 const SK = "redtape-stats-v1";
-const blank = { started: 0, solved: 0, rejected: 0, dodges: 0, keys: 0, totalTime: 0, best: 0, recent: [] };
+const blank = { started: 0, solved: 0, rejected: 0, dodges: 0, captchas: 0, keys: 0, totalTime: 0, best: 0, recent: [] };
 let S;
 try { S = { ...blank, ...JSON.parse(localStorage.getItem(SK) || "{}") }; } catch (e) { S = { ...blank }; }
 const save = () => { try { localStorage.setItem(SK, JSON.stringify(S)); } catch (e) {} };
 const fmt = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
-const run = { keys: 0, rejected: 0, dodges: 0 };
+const run = { keys: 0, rejected: 0, dodges: 0, reloads: 0 };
 const start = Date.now();
 S.started++; save();
 
@@ -234,6 +271,7 @@ function renderStats() {
     ["Durchschnittliche Zeit", S.solved ? fmt(avg) : "–"],
     ["Abgelehnte Abgaben", S.rejected],
     ["Ausweichversuche des Buttons", S.dodges],
+    ["Captchas neu geladen", S.captchas],
     ["Tastenanschläge gesamt", S.keys]
   ];
   const recent = S.recent.length
@@ -259,13 +297,175 @@ F.forEach(f => {
   d.querySelector("input").addEventListener("keydown", e => { if (e.key.length === 1 || e.key === "Backspace") { run.keys++; S.keys++; } });
 });
 
+// ===== Anlagen: Zusatzverfahren, die nacheinander ausgegeben werden =====
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const EMO = "'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";
+const from = (a, r) => a[Math.floor(r() * a.length)];
+const X = [];
+const mk = (id, label, hint, rules, build) => X.push({ id, label, hint, rules, build, done: false, el: null });
+let revealed = 0;
+const reload = () => { run.reloads++; S.captchas++; save(); };
+
+// A: Captcha mit verzerrten Zeichen
+const CH = "ABCDEFGHJKLMNPRSTUVWXYZ2345679";
+const newCap = r => Array.from({ length: 5 }, () => CH[Math.floor(r() * CH.length)]).join("");
+let capText = newCap(rnd), capIn = "";
+function drawCaptcha(cv) {
+  const c = cv.getContext("2d"), W = cv.width, H = cv.height, ink = css("--ink"), red = css("--red"), ln = css("--line");
+  c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = css("--field"); c.fillRect(0, 0, W, H);
+  const R = () => Math.random();
+  for (let i = 0; i < 7; i++) { c.strokeStyle = i % 2 ? red : ln; c.lineWidth = 1.5 + R() * 2; c.beginPath(); c.moveTo(R() * W, R() * H); c.bezierCurveTo(R() * W, R() * H, R() * W, R() * H, R() * W, R() * H); c.stroke(); }
+  for (let i = 0; i < 120; i++) { c.fillStyle = R() < .5 ? ln : ink; c.fillRect(R() * W, R() * H, 2, 2); }
+  const step = W / (capText.length + 1);
+  [...capText].forEach((ch, i) => {
+    c.save(); c.translate(step * (i + .85), H / 2 + (R() - .5) * H * .25); c.rotate((R() - .5) * .8); c.transform(1, 0, (R() - .5) * .6, 1, 0, 0);
+    c.font = `700 ${H * .55}px "Courier Prime","Courier New",monospace`; c.fillStyle = ink; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(ch, 0, 0); c.restore();
+  });
+  for (let i = 0; i < 3; i++) { c.strokeStyle = red; c.lineWidth = 2; c.beginPath(); c.moveTo(0, R() * H); c.bezierCurveTo(W * .3, R() * H, W * .6, R() * H, W, R() * H); c.stroke(); }
+}
+mk("captcha", "Sicherheitsprüfung (Captcha)", "Bitte geben Sie die Zeichen aus dem Bild ein. Groß- und Kleinschreibung ist unerheblich.",
+  [["Die Zeichen stimmen mit dem Bild überein", () => capIn.replace(/\s/g, "").toUpperCase() === capText]],
+  box => {
+    box.innerHTML = `<canvas class="cap" width="440" height="120" aria-label="Captcha"></canvas><button type="button" class="mini">Neu laden</button><input type="text" autocomplete="off" spellcheck="false" autocapitalize="characters" aria-label="Captcha-Zeichen">`;
+    const cv = box.querySelector("canvas"), inp = box.querySelector("input");
+    drawCaptcha(cv);
+    inp.addEventListener("input", () => { capIn = inp.value; check(); });
+    box.querySelector("button").addEventListener("click", () => { capText = newCap(Math.random); capIn = ""; inp.value = ""; reload(); drawCaptcha(cv); check(); });
+  });
+
+// B: Bild-Captcha (3 × 3)
+const CATS = { Ampeln: ["🚦", "🚥"], Busse: ["🚌", "🚍"], Bäume: ["🌳", "🌲"], Autos: ["🚗", "🚙"], Häuser: ["🏠", "🏡"], Katzen: ["🐈", "🐱"], Sterne: ["⭐", "🌟"] };
+let gCat, gTiles, gCorrect, gSel = new Set();
+function newGrid(r) {
+  const names = Object.keys(CATS); gCat = from(names, r);
+  const n = 3 + Math.floor(r() * 2), idx = [...Array(9).keys()].sort(() => r() - .5).slice(0, n);
+  const others = names.filter(k => k !== gCat).flatMap(k => CATS[k]);
+  gTiles = Array.from({ length: 9 }, (_, i) => idx.includes(i) ? from(CATS[gCat], r) : from(others, r));
+  gCorrect = new Set(idx); gSel = new Set();
+}
+newGrid(rnd);
+mk("bilder", "Bilderkennung", "Bitte beweisen Sie, dass Sie ein Mensch sind. Oder zumindest ein Mensch mit Aktenzeichen.",
+  [["Genau die richtigen Felder sind markiert", () => gSel.size === gCorrect.size && [...gSel].every(i => gCorrect.has(i))]],
+  box => {
+    box.innerHTML = `<p class="q"></p><div class="grid9"></div><button type="button" class="mini">Neue Aufgabe</button>`;
+    const q = box.querySelector(".q"), g = box.querySelector(".grid9");
+    const draw = () => {
+      q.innerHTML = `Wählen Sie alle Felder mit <b>${gCat}</b>.`;
+      g.innerHTML = gTiles.map((t, i) => `<button type="button" aria-pressed="false" data-i="${i}" style="font-family:${EMO}">${t}</button>`).join("");
+    };
+    draw();
+    g.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      const i = +b.dataset.i; gSel.has(i) ? gSel.delete(i) : gSel.add(i);
+      b.classList.toggle("on", gSel.has(i)); b.setAttribute("aria-pressed", gSel.has(i)); check();
+    });
+    box.querySelector(".mini").addEventListener("click", () => { newGrid(Math.random); reload(); draw(); check(); });
+  });
+
+// C: Aktenzählung
+const OBJ = ["📎", "📁", "🔏", "📌", "📮"];
+let cTarget, cSeq, cN, cIn = "";
+function newCount(r) {
+  do {
+    cTarget = from(OBJ, r); cSeq = Array.from({ length: 18 + Math.floor(r() * 9) }, () => from(OBJ, r));
+    cN = cSeq.filter(x => x === cTarget).length;
+  } while (cN < 3 || cN > 9);
+}
+newCount(rnd);
+mk("zaehlung", "Aktenzählung", "Das Archiv verlangt eine exakte Bestandszählung.",
+  [["Die genannte Anzahl stimmt", () => cIn.trim() === String(cN)]],
+  box => {
+    box.innerHTML = `<p class="q">Wie oft kommt <b style="font-family:${EMO}">${cTarget}</b> vor?</p><div class="seq" style="font-family:${EMO}">${cSeq.join(" ")}</div><input type="text" inputmode="numeric" autocomplete="off" aria-label="Anzahl">`;
+    const inp = box.querySelector("input");
+    inp.addEventListener("input", () => { cIn = inp.value; check(); });
+  });
+
+// D: Gebührenmarke (gedrückt halten)
+const FEE = 4000;
+let feeT = 0, feeDone = false, holding = false;
+mk("gebuehr", "Gebührenmarke", "Kleben Sie die Marke fest. Das dauert. Loslassen setzt die Marke zurück.",
+  [[`Taste ${FEE / 1000} Sekunden ununterbrochen gehalten`, () => feeDone]],
+  box => {
+    box.innerHTML = `<div class="bar"><i></i></div><button type="button" class="mini hold">Marke festhalten</button>`;
+    const b = box.querySelector("button"), bar = box.querySelector("i");
+    let last = 0;
+    const loop = t => {
+      if (!holding || feeDone) return;
+      feeT += t - last; last = t;
+      if (feeT >= FEE) { feeT = FEE; feeDone = true; holding = false; b.textContent = "Marke geklebt ✓"; check(); }
+      bar.style.width = feeT / FEE * 100 + "%";
+      if (!feeDone) requestAnimationFrame(loop);
+    };
+    const down = () => { if (feeDone || holding) return; holding = true; last = performance.now(); requestAnimationFrame(loop); };
+    const up = () => { holding = false; if (!feeDone) { feeT = 0; bar.style.width = "0"; } };
+    b.addEventListener("pointerdown", e => { e.preventDefault(); down(); });
+    ["pointerup", "pointercancel", "pointerleave", "blur"].forEach(ev => b.addEventListener(ev, up));
+    b.addEventListener("keydown", e => { if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); down(); } });
+    b.addEventListener("keyup", e => { if (e.key === " " || e.key === "Enter") up(); });
+    b.addEventListener("contextmenu", e => e.preventDefault());
+  });
+
+// E: Unterschrift
+let sigLen = 0, sigStrokes = 0;
+mk("unterschrift", "Unterschrift", "Unterschreiben Sie im Feld. Mit Maus, Finger oder Stift.",
+  [["Die Unterschrift ist mindestens 350 px lang", () => sigLen >= 350],
+   ["Sie besteht aus höchstens 3 Strichen (nicht zu oft absetzen)", () => sigStrokes >= 1 && sigStrokes <= 3],
+   ["Sie ist nicht länger als 1500 px (Behörden mögen es kurz)", () => sigLen > 0 && sigLen <= 1500]],
+  box => {
+    box.innerHTML = `<canvas class="sig" width="600" height="200" aria-label="Unterschriftsfeld"></canvas><button type="button" class="mini">Löschen</button>`;
+    const cv = box.querySelector("canvas"), c = cv.getContext("2d");
+    c.lineWidth = 4; c.lineCap = c.lineJoin = "round";
+    let pen = null;
+    const pt = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height]; };
+    cv.addEventListener("pointerdown", e => { e.preventDefault(); cv.setPointerCapture(e.pointerId); pen = pt(e); sigStrokes++; c.strokeStyle = css("--ink"); c.beginPath(); c.arc(pen[0], pen[1], 2, 0, 7); c.stroke(); check(); });
+    cv.addEventListener("pointermove", e => {
+      if (!pen) return; const p = pt(e);
+      c.beginPath(); c.moveTo(pen[0], pen[1]); c.lineTo(p[0], p[1]); c.stroke();
+      sigLen += Math.hypot(p[0] - pen[0], p[1] - pen[1]) / 2; pen = p; check();
+    });
+    ["pointerup", "pointercancel"].forEach(ev => cv.addEventListener(ev, () => { pen = null; }));
+    box.querySelector("button").addEventListener("click", () => { c.clearRect(0, 0, cv.width, cv.height); sigLen = 0; sigStrokes = 0; check(); });
+  });
+
+// F: Stempelschalter mit Öffnungszeiten
+const w0 = pick([0, 10, 20, 30, 40, 50]);
+let stamped = false;
+mk("schalter", "Stempelschalter", `Der Schalter ist nur geöffnet, wenn die Sekundenanzeige der Uhr zwischen ${String(w0).padStart(2, "0")} und ${String(w0 + 9).padStart(2, "0")} liegt.`,
+  [["Der Stempel wurde abgeholt", () => stamped]],
+  (box, a) => {
+    box.innerHTML = `<div class="sch"></div><button type="button" class="mini">Stempel abholen</button>`;
+    const st = box.querySelector(".sch"), b = box.querySelector("button");
+    a.tick = () => {
+      if (stamped) { st.className = "sch open"; st.textContent = "Stempel erhalten ✓"; return; }
+      const s = new Date().getSeconds(), open = s >= w0 && s < w0 + 10;
+      st.className = "sch " + (open ? "open" : "closed");
+      st.textContent = open ? `Schalter GEÖFFNET (noch ${w0 + 10 - s} s)` : `Schalter geschlossen. Öffnet in ${(w0 - s + 60) % 60} s.`;
+    };
+    b.addEventListener("click", () => {
+      const s = new Date().getSeconds();
+      if (s >= w0 && s < w0 + 10) { stamped = true; b.disabled = true; check(); }
+      else { st.textContent = "Der Schalter ist geschlossen. Bitte nehmen Sie eine Wartenummer."; }
+    });
+    a.tick();
+  });
+
+const aRoot = document.getElementById("anlagen");
+X.forEach(a => {
+  const d = document.createElement("div");
+  d.className = "field anlage"; d.id = "a-" + a.id; d.hidden = true;
+  d.innerHTML = `<div class="lab">${a.label}<span class="stamp">geprüft</span></div><p class="hint">${a.hint}</p><div class="box"></div><ul aria-live="polite">${a.rules.map(() => "<li><b></b><span></span></li>").join("")}</ul>`;
+  d.querySelectorAll("li span").forEach((s, i) => s.textContent = a.rules[i][0]);
+  aRoot.appendChild(d); a.el = d; a.build(d.querySelector(".box"), a);
+});
+
 function live(open) {
-  const items = [["Zeit", fmt(Math.round((Date.now() - start) / 1000))], ["Felder", (F.length - open) + "/" + F.length], ["Anschläge", run.keys], ["Ablehnungen", run.rejected]];
+  const total = F.length + X.length;
+  const items = [["Zeit", fmt(Math.round((Date.now() - start) / 1000))], ["Felder", (total - open) + "/" + total], ["Anschläge", run.keys], ["Ablehnungen", run.rejected]];
   document.getElementById("live").innerHTML = items.map(i => `<div><strong>${i[1]}</strong>${i[0]}</div>`).join("");
 }
 
 function check() {
-  let open = 0;
+  let openF = 0;
   F.forEach(f => {
     const el = document.getElementById("f-" + f.id);
     let all = true;
@@ -277,8 +477,34 @@ function check() {
       if (!ok) all = false;
     });
     el.classList.toggle("done", all);
-    if (!all) open++;
+    if (!all) openF++;
   });
+  X.forEach(a => {
+    let all = true;
+    a.el.querySelectorAll("li").forEach((li, i) => {
+      let ok = false;
+      try { ok = !!a.rules[i][1](); } catch (e) {}
+      li.className = ok ? "ok" : "bad";
+      li.firstChild.textContent = ok ? "✓" : "✗";
+      if (!ok) all = false;
+    });
+    a.done = all;
+    a.el.classList.toggle("done", all);
+    if (a.tick) a.tick();
+  });
+  const before = revealed;
+  if (revealed > 0 || openF === 0) {
+    if (!revealed) revealed = 1;
+    while (revealed < X.length && X[revealed - 1].done) revealed++;
+  }
+  X.forEach((a, i) => { a.el.hidden = i >= revealed; });
+  if (revealed > before && !calm) { try { X[revealed - 1].el.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {} }
+  const gate = document.getElementById("gate"), rest = X.length - revealed;
+  gate.hidden = rest <= 0 && revealed > 0;
+  gate.textContent = revealed === 0
+    ? "Anlagen werden erst nach vollständiger Prüfung des Hauptformulars ausgegeben."
+    : `Weitere Anlagen werden nachgereicht, sobald die vorherige geprüft ist (${rest} ausstehend).`;
+  const open = openF + X.filter(a => !a.done).length;
   live(open);
   return open;
 }
@@ -310,7 +536,7 @@ btn.addEventListener("click", () => {
   S.recent = [{ seed, time: s }, ...S.recent.filter(r => r.seed !== seed)].slice(0, 5);
   save(); renderStats();
   document.getElementById("rtext").textContent =
-    `Antrag Nr. ${seed}: ${fmt(s)} Min., ${run.keys} Anschläge, ${run.rejected} Ablehnungen, ${run.dodges} Ausweichversuche des Buttons.` +
+    `Antrag Nr. ${seed}: ${fmt(s)} Min., ${run.keys} Anschläge, ${run.rejected} Ablehnungen, ${run.dodges} Ausweichversuche des Buttons, ${run.reloads} Captchas neu geladen.` +
     (record ? " Neue Bestzeit!" : "") + " Bitte warten Sie nun 6 bis 8 Wochen.";
   document.getElementById("result").classList.add("show");
   document.getElementById("again").focus();
